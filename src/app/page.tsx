@@ -4,6 +4,9 @@ import { useRef } from "react";
 
 export default function Home() {
   const audioRef = useRef<HTMLAudioElement>(null);
+  // Shared with stop()
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   async function start() {
     const res = await fetch("/api/realtime/session", { method: "POST" });
@@ -12,6 +15,7 @@ export default function Home() {
     console.log(value.slice(0, 3));
 
     const pc = new RTCPeerConnection();
+    pcRef.current = pc;
     pc.onconnectionstatechange = () => console.log("state:", pc.connectionState);
     console.log(pc.connectionState);
     pc.ontrack = (e) => {
@@ -24,10 +28,23 @@ export default function Home() {
 
     const dc = pc.createDataChannel("oai-events");
     dc.onopen = () => console.log("data channel open");
-    dc.onmessage = (e) => console.log(JSON.parse(e.data));
+    dc.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      console.log(msg.type);
+      if (msg.type === "conversation.item.input_audio_transcription.completed") {
+        console.log("you:", msg.transcript);
+      }
+      if (msg.type === "response.output_audio_transcript.done") {
+        console.log("ai:", msg.transcript);
+      }
+      if (msg.type === "response.done") {
+        console.log("usage:", msg.response?.usage);
+      }
+    };
     console.log(dc.readyState);
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    streamRef.current = stream;
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
     console.log(stream.getAudioTracks().length);
 
@@ -52,6 +69,16 @@ export default function Home() {
     console.log(pc.signalingState);
   }
 
+  function stop() {
+    // Stop mic
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    // Close connection
+    pcRef.current?.close();
+    pcRef.current = null;
+    streamRef.current = null;
+    console.log("stopped");
+  }
+
   return (
     <main>
       <audio
@@ -59,6 +86,7 @@ export default function Home() {
         autoPlay
       ></audio>
       <button onClick={start}>Start</button>
+      <button onClick={stop}>Stop</button>
     </main>
   );
 }
