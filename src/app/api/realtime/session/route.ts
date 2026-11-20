@@ -1,6 +1,14 @@
 import { MODELS } from "@/lib/ai/models";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
+import { cookies } from "next/headers";
 
 export async function POST() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value; // undefined if not logged in, so use "?."
+  if (!(await verifySessionToken(token))) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     console.error("OPENAI_API_KEY is not set");
