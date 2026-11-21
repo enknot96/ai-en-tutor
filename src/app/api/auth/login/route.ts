@@ -29,6 +29,7 @@ export async function POST(request: Request) {
 
   const token = await createSessionToken();
   const cookieStore = await cookies();
+  // Browser stores this as a cookie named "session"
   cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions());
   return Response.json({ ok: true });
 }
