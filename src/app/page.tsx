@@ -10,10 +10,16 @@ export default function Home() {
 
   const [status, setStatus] = useState("idle");
   const [lastEvent, setLastEvent] = useState("-");
+  const [events, setEvents] = useState<string[]>([]);
   const [errorText, setErrorText] = useState("");
+  const [track, setTrack] = useState("none");
 
   async function start() {
     setErrorText("");
+    setLastEvent("-");
+    setEvents([]);
+    setTrack("none");
+
     try {
       const res = await fetch("/api/realtime/session", { method: "POST" });
       if (!res.ok) {
@@ -33,8 +39,10 @@ export default function Home() {
       console.log(pc.connectionState);
       pc.ontrack = (e) => {
         console.log("remote track received");
+        setTrack("received");
         if (audioRef.current) {
           audioRef.current.srcObject = e.streams[0];
+          audioRef.current.play().catch((err) => setErrorText(`play failed: ${err.name}`));
         }
       };
       console.log(audioRef.current?.tagName);
@@ -44,6 +52,7 @@ export default function Home() {
       dc.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         setLastEvent(msg.type);
+        setEvents((prev) => [...prev, msg.type].slice(-8));
         console.log(msg.type);
         if (msg.type === "conversation.item.input_audio_transcription.completed") {
           console.log("you:", msg.transcript);
@@ -96,7 +105,6 @@ export default function Home() {
     pcRef.current = null;
     streamRef.current = null;
     setStatus("stopped");
-    setLastEvent("-");
     setErrorText("");
     console.log("stopped");
   }
@@ -120,6 +128,8 @@ export default function Home() {
       <button onClick={logout}>Logout</button>
       <p>status: {status}</p>
       <p>last event: {lastEvent}</p>
+      <p>remote track: {track}</p>
+      <p className="text-xs break-all">events: {events.join(" > ")}</p>
       {errorText && <p className="text-red-600">error: {errorText}</p>}
     </main>
   );
