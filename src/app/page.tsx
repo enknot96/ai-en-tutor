@@ -79,6 +79,14 @@ export default function Home() {
     console.log("stopped");
   }
 
+  async function logout() {
+    stop();
+    await fetch("/api/auth/logout", { method: "POST" });
+    // Full reload clears client state on logout (Next.js "Preserving UI state" guide)
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/login";
+  }
+
   return (
     <main>
       <audio
@@ -87,6 +95,7 @@ export default function Home() {
       ></audio>
       <button onClick={start}>Start</button>
       <button onClick={stop}>Stop</button>
+      <button onClick={logout}>Logout</button>
     </main>
   );
 }
