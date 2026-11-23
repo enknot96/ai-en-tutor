@@ -65,12 +65,26 @@ function toSummary(r: GuardianResult): ArticleSummary {
   };
 }
 
-// Build the search URL for one section
-function buildSearchUrl(section: string): string {
+// Convert one raw Guardian item into our article
+function toArticle(r: GuardianResult): Article {
+  return {
+    ...toSummary(r),
+    byline: r.fields.byline ?? "",
+    bodyText: r.fields.bodyText ?? "",
+  };
+}
+
+function getApiKey(): string {
   const key = process.env.GUARDIAN_API_KEY;
   if (!key) {
     throw new Error("GUARDIAN_API_KEY is not set");
   }
+  return key;
+}
+
+// Build the search URL for one section
+function buildSearchUrl(section: string): string {
+  const key = getApiKey();
 
   const params = new URLSearchParams({
     section,
@@ -81,6 +95,35 @@ function buildSearchUrl(section: string): string {
   });
 
   return `${BASE_URL}/search?${params}`;
+}
+
+// Guardian ids look like "section/2026/nov/22/slug": lowercase letters, digits, "-" and "/"
+const ID_PATTERN = /^[a-z0-9-]+(\/[a-z0-9-]+)+$/;
+function assertValidId(id: string): void {
+  if (!ID_PATTERN.test(id)) {
+    throw new Error("Invalid article id");
+  }
+}
+
+// Build the URL for one article by its id
+function buildArticleUrl(id: string): string {
+  const params = new URLSearchParams({
+    "show-fields": "trailText,byline,wordcount,bodyText",
+    "api-key": getApiKey(),
+  });
+
+  return `${BASE_URL}/${id}?${params}`;
+}
+
+// Fetch one article (with body) from the Guardian content API
+async function fetchArticle(id: string): Promise<GuardianResult> {
+  assertValidId(id);
+  const res = await fetch(buildArticleUrl(id));
+  if (!res.ok) {
+    throw new Error(`Guardian article failed: ${res.status}`);
+  }
+  const data = await res.json();
+  return data.response.content as GuardianResult;
 }
 
 // Fetch the newest items of one section from the Guardian search API
@@ -127,7 +170,7 @@ export class GuardianSource implements ArticleSource {
     return listCandidates();
   }
 
-  getArticle(id: string): Promise<Article> {
-    throw new Error(`getArticle is not implemented yet: ${id}`);
+  async getArticle(id: string): Promise<Article> {
+    return toArticle(await fetchArticle(id));
   }
 }
