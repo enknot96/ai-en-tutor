@@ -49,7 +49,7 @@ type GuardianResult = {
     trailText?: string;
     byline?: string;
     wordcount?: string;
-    bodyText?: string;
+    body?: string;
   };
 };
 
@@ -65,12 +65,26 @@ function toSummary(r: GuardianResult): ArticleSummary {
   };
 }
 
+// Turn Guardian body HTML into plain text, keeping paragraphs separated by a blank line
+function htmlToText(html: string): string {
+  return html
+    .replace(/<aside[^>]*>[\s\S]*?<\/aside>/g, "")
+    .replace(/<\/?(?:p|h2|ul|ol|li)[^>]*>/g, "\n\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0)
+    .join("\n\n");
+}
+
 // Convert one raw Guardian item into our article
 function toArticle(r: GuardianResult): Article {
   return {
     ...toSummary(r),
     byline: r.fields.byline ?? "",
-    bodyText: r.fields.bodyText ?? "",
+    bodyText: htmlToText(r.fields.body ?? ""),
   };
 }
 
@@ -108,7 +122,7 @@ function assertValidId(id: string): void {
 // Build the URL for one article by its id
 function buildArticleUrl(id: string): string {
   const params = new URLSearchParams({
-    "show-fields": "trailText,byline,wordcount,bodyText",
+    "show-fields": "trailText,byline,wordcount,body",
     "api-key": getApiKey(),
   });
 
