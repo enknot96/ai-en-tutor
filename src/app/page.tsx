@@ -1,5 +1,6 @@
 "use client";
 
+import ArticlePicker from "@/components/article-picker";
 import { useRef, useState } from "react";
 
 export default function Home() {
@@ -119,13 +120,29 @@ export default function Home() {
 
   return (
     <main>
+      <ArticlePicker />
       <audio
         ref={audioRef}
         autoPlay
       ></audio>
-      <button onClick={start}>Start</button>
-      <button onClick={stop}>Stop</button>
-      <button onClick={logout}>Logout</button>
+      <button
+        onClick={start}
+        className="cursor-pointer"
+      >
+        Start
+      </button>
+      <button
+        onClick={stop}
+        className="cursor-pointer"
+      >
+        Stop
+      </button>
+      <button
+        onClick={logout}
+        className="cursor-pointer"
+      >
+        Logout
+      </button>
       <p>status: {status}</p>
       <p>last event: {lastEvent}</p>
       <p>remote track: {track}</p>
