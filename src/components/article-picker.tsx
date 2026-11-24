@@ -3,7 +3,7 @@
 import { type Article, type ArticleSummary } from "@/lib/articles/types";
 import { useState } from "react";
 
-export default function ArticlePicker() {
+export default function ArticlePicker({ onSelect }: { onSelect: (article: Article) => void }) {
   const [candidates, setCandidates] = useState<ArticleSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -63,11 +63,28 @@ export default function ArticlePicker() {
         >
           Back
         </button>
+        <button
+          onClick={() => onSelect(article)}
+          className="cursor-pointer"
+        >
+          Use this article
+        </button>
         <h2>{article.title}</h2>
-        <p className="text-xs">{article.byline}</p>
+        <p className="text-xs">
+          {article.byline} ·
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {" "}
+            Read the original on The Guardian
+          </a>
+        </p>
         {article.bodyText.split("\n\n").map((p, i) => (
           <p key={i}>{p}</p>
         ))}
+        <p className="text-xs">Powered by The Guardian</p>
       </section>
     );
   }

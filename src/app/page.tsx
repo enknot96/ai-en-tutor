@@ -1,6 +1,7 @@
 "use client";
 
 import ArticlePicker from "@/components/article-picker";
+import { type Article } from "@/lib/articles/types";
 import { useRef, useState } from "react";
 
 export default function Home() {
@@ -14,6 +15,7 @@ export default function Home() {
   const [events, setEvents] = useState<string[]>([]);
   const [errorText, setErrorText] = useState("");
   const [track, setTrack] = useState("none");
+  const [selected, setSelected] = useState<Article | null>(null);
 
   async function start() {
     setErrorText("");
@@ -120,7 +122,8 @@ export default function Home() {
 
   return (
     <main>
-      <ArticlePicker />
+      <ArticlePicker onSelect={setSelected} />
+      {selected && <p>Selected: {selected.title}</p>}
       <audio
         ref={audioRef}
         autoPlay
