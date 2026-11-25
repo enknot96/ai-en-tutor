@@ -27,7 +27,12 @@ export default function Home() {
     setTrack("none");
 
     try {
-      const res = await fetch("/api/realtime/session", { method: "POST" });
+      const lesson = selected && questions.length > 0 ? { articleId: selected.id, questions } : {};
+      const res = await fetch("/api/realtime/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lesson),
+      });
       if (!res.ok) {
         setErrorText(`session failed: ${res.status}`);
         return;
@@ -54,7 +59,18 @@ export default function Home() {
       console.log(audioRef.current?.tagName);
 
       const dc = pc.createDataChannel("oai-events");
-      dc.onopen = () => console.log("data channel open");
+      dc.onopen = () => {
+        console.log("data channel open");
+        dc.send(
+          JSON.stringify({
+            type: "response.create",
+            response: {
+              instructions:
+                "Start the lesson now with the warm-up: one short greeting and one light small-talk question.",
+            },
+          }),
+        );
+      };
       dc.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         setLastEvent(msg.type);
