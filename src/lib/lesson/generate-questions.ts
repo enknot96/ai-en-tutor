@@ -1,6 +1,6 @@
 import { generateText, Output } from "ai";
 import type { Article } from "../articles/types";
-import { QUESTION_COUNT, questionSchema } from "./questions";
+import { isOpenQuestion, QUESTION_COUNT, questionSchema } from "./questions";
 import { openai } from "@ai-sdk/openai";
 import { MODELS } from "../ai/models";
 
@@ -27,7 +27,7 @@ ${article.bodyText}
   return { system: SYSTEM_PROMPT, prompt };
 }
 
-export async function generateQuestions(article: Article) {
+async function requestQuestions(article: Article): Promise<string[]> {
   const { system, prompt } = buildQuestionPrompt(article);
   const { output } = await generateText({
     model: openai(MODELS.question),
@@ -36,4 +36,19 @@ export async function generateQuestions(article: Article) {
     output: Output.object({ schema: questionSchema }),
   });
   return output.questions;
+}
+
+const MAX_ATTEMPTS = 2;
+
+function isValidQuestion(question: string): boolean {
+  return question.trim().endsWith("?") && isOpenQuestion(question);
+}
+
+// Ask the model, check the result, and try once more if a question is invalid
+export async function generateQuestions(article: Article): Promise<string[]> {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const questions = await requestQuestions(article);
+    if (questions.every(isValidQuestion)) return questions;
+  }
+  throw new Error("Question generation failed validation");
 }
