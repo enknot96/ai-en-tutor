@@ -16,6 +16,9 @@ export default function Home() {
   const [errorText, setErrorText] = useState("");
   const [track, setTrack] = useState("none");
   const [selected, setSelected] = useState<Article | null>(null);
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [preparing, setPreparing] = useState(false);
+  const [prepareError, setPrepareError] = useState("");
 
   async function start() {
     setErrorText("");
@@ -120,10 +123,45 @@ export default function Home() {
     window.location.href = "/login";
   }
 
+  async function selectArticle(article: Article) {
+    setSelected(article);
+    setQuestions([]);
+    setPrepareError("");
+    setPreparing(true);
+
+    try {
+      const res = await fetch("/api/lessons/prepare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ articleId: article.id }),
+      });
+      if (!res.ok) {
+        setPrepareError(`prepare failed: ${res.status}`);
+        return;
+      }
+      const data = await res.json();
+      setQuestions(data.questions);
+    } catch {
+      setPrepareError("Network error");
+    } finally {
+      setPreparing(false);
+    }
+  }
+
   return (
     <main>
-      <ArticlePicker onSelect={setSelected} />
+      <ArticlePicker
+        onSelect={selectArticle}
+        disabled={preparing}
+      />
       {selected && <p>Selected: {selected.title}</p>}
+      {preparing && <p>Preparing questions...</p>}
+      {prepareError && <p className="text-red-600">{prepareError}</p>}
+      <ol>
+        {questions.map((q) => (
+          <li key={q}>{q}</li>
+        ))}
+      </ol>
       <audio
         ref={audioRef}
         autoPlay

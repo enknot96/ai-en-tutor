@@ -3,7 +3,13 @@
 import { type Article, type ArticleSummary } from "@/lib/articles/types";
 import { useState } from "react";
 
-export default function ArticlePicker({ onSelect }: { onSelect: (article: Article) => void }) {
+export default function ArticlePicker({
+  onSelect,
+  disabled,
+}: {
+  onSelect: (article: Article) => void;
+  disabled: boolean;
+}) {
   const [candidates, setCandidates] = useState<ArticleSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -60,12 +66,14 @@ export default function ArticlePicker({ onSelect }: { onSelect: (article: Articl
         <button
           onClick={() => setArticle(null)}
           className="cursor-pointer"
+          disabled={disabled}
         >
           Back
         </button>
         <button
           onClick={() => onSelect(article)}
           className="cursor-pointer"
+          disabled={disabled}
         >
           Use this article
         </button>
@@ -93,7 +101,7 @@ export default function ArticlePicker({ onSelect }: { onSelect: (article: Articl
     <section>
       <button
         onClick={loadCandidates}
-        disabled={loading}
+        disabled={loading || disabled}
         className="cursor-pointer"
       >
         {loading ? "Loading..." : "Get candidates"}
@@ -104,7 +112,7 @@ export default function ArticlePicker({ onSelect }: { onSelect: (article: Articl
           <li key={c.id}>
             <button
               onClick={() => openArticle(c.id)}
-              disabled={opening}
+              disabled={opening || disabled}
               className="cursor-pointer"
             >
               {c.title}

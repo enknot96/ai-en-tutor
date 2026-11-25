@@ -17,5 +17,3 @@ export async function POST(request: Request) {
     return Response.json({ error: "Failed to prepare lesson" }, { status: 502 });
   }
 }
-
-// media/2026/nov/24/bbc-preschool-shows-cbeebies-hub-netflix
