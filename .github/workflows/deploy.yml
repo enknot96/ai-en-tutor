@@ -1,0 +1,78 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never run two deploys at the same time
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      # Reads "packageManager" in package.json (pnpm@10.33.0)
+      - run: corepack enable
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm build
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp -r .next/standalone/. dist/
+          mkdir -p dist/.next
+          cp -r .next/static dist/.next/static
+          cp -r public dist/public
+
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload release
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          rsync -az --delete --chmod=D755,F644 dist/ "deploy@${SSH_HOST}:/opt/ai-english-coach/releases/${GITHUB_SHA}/"
+
+      - name: Switch, restart, health check
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          ssh "deploy@${SSH_HOST}" bash -s -- "${GITHUB_SHA}" <<'REMOTE'
+          set -e
+          SHA="$1"
+          cd /opt/ai-english-coach
+          PREV=$(readlink current || true)
+          ln -sfn "releases/${SHA}" current
+          sudo systemctl restart ai-english-coach
+          sleep 3
+          if ! curl -fsS http://127.0.0.1:3000/api/health; then
+            echo "health check failed. rollback"
+            [ -n "$PREV" ] && ln -sfn "$PREV" current && sudo systemctl restart ai-english-coach
+            exit 1
+          fi
+          # Keep the newest 3 releases
+          ls -1dt releases/* | tail -n +4 | xargs -r rm -rf
+          REMOTE

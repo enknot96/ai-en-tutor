@@ -1,0 +1,27 @@
+# /etc/systemd/system/ai-english-coach.service
+[Unit]
+Description=AI English Coach (Next.js standalone)
+After=network.target
+# Add postgresql.service here when the database is introduced
+
+[Service]
+Type=simple
+User=coach
+Group=coach
+WorkingDirectory=/opt/ai-english-coach/current
+EnvironmentFile=/etc/ai-english-coach.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+Environment=NODE_OPTIONS=--max-old-space-size=384
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=3
+# Keep a runaway process from taking the whole server down (tune after measuring)
+MemoryHigh=600M
+MemoryMax=800M
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
