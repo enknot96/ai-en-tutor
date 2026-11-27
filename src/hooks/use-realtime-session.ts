@@ -26,7 +26,7 @@ export function useRealtimeSession() {
       });
       if (!res.ok) {
         setErrorText(`session failed: ${res.status}`);
-        return;
+        return false;
       }
       const data = await res.json();
       const value = data.value;
@@ -99,14 +99,16 @@ export function useRealtimeSession() {
       if (!sdpRes.ok) {
         console.error("realtime call failed", sdpRes.status, await sdpRes.text());
         setErrorText(`realtime call failed: ${sdpRes.status}`);
-        return;
+        return false;
       }
       const answer = { type: "answer" as const, sdp: await sdpRes.text() };
       await pc.setRemoteDescription(answer);
       console.log(pc.signalingState);
+      return true;
     } catch (err) {
       console.error(err);
       setErrorText(err instanceof Error ? `${err.name}: ${err.message}` : String(err));
+      return false;
     }
   }
 
