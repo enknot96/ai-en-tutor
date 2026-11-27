@@ -12,7 +12,7 @@ export function useRealtimeSession() {
   const [errorText, setErrorText] = useState("");
   const [track, setTrack] = useState("none");
 
-  async function start(lesson: { articleId: string; questions: string[] } | null) {
+  async function start(lesson: { articleId: string; questions: string[] }) {
     setErrorText("");
     setLastEvent("-");
     setEvents([]);
@@ -22,7 +22,7 @@ export function useRealtimeSession() {
       const res = await fetch("/api/realtime/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(lesson ?? {}),
+        body: JSON.stringify(lesson),
       });
       if (!res.ok) {
         setErrorText(`session failed: ${res.status}`);
@@ -120,7 +120,6 @@ export function useRealtimeSession() {
     pcRef.current = null;
     streamRef.current = null;
     setStatus("stopped");
-    setErrorText("");
     console.log("stopped");
   }
 

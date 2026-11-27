@@ -1,7 +1,8 @@
 "use client";
 
-import ArticlePicker from "@/components/article-picker";
 import Diagnostics from "@/components/diagnostics";
+import LessonScreen from "@/components/lesson-screen";
+import PrepareScreen from "@/components/prepare-screen";
 import ThemeToggle from "@/components/theme-toggle";
 import { useRealtimeSession } from "@/hooks/use-realtime-session";
 import { type Article } from "@/lib/articles/types";
@@ -15,6 +16,7 @@ export default function Home() {
   const [questions, setQuestions] = useState<string[]>([]);
   const [preparing, setPreparing] = useState(false);
   const [prepareError, setPrepareError] = useState("");
+  const [view, setView] = useState<"prepare" | "lesson">("prepare");
 
   async function logout() {
     stop();
@@ -49,52 +51,57 @@ export default function Home() {
     }
   }
 
+  const canStart = selected !== null && questions.length > 0 && !preparing;
+  async function startLesson() {
+    if (!selected || questions.length === 0) return;
+    setView("lesson");
+    const ok = await start({ articleId: selected.id, questions });
+    if (!ok) {
+      stop();
+      setView("prepare");
+    }
+  }
+
+  function endLesson() {
+    stop();
+    setView("prepare");
+  }
+
+  const diagnostics = (
+    <Diagnostics
+      status={status}
+      lastEvent={lastEvent}
+      track={track}
+      events={events}
+      errorText={errorText}
+    />
+  );
+
   return (
     <main>
       <ThemeToggle />
-      <ArticlePicker
-        onSelect={selectArticle}
-        disabled={preparing}
-      />
-      {selected && <p>Selected: {selected.title}</p>}
-      {preparing && <p>Preparing questions...</p>}
-      {prepareError && <p className="text-red-600">{prepareError}</p>}
-      <ol>
-        {questions.map((q) => (
-          <li key={q}>{q}</li>
-        ))}
-      </ol>
+      {view === "prepare" ? (
+        <PrepareScreen
+          selected={selected}
+          questions={questions}
+          preparing={preparing}
+          prepareError={prepareError}
+          canStart={canStart}
+          onSelect={selectArticle}
+          onStart={startLesson}
+          onLogout={logout}
+          diagnostics={diagnostics}
+        />
+      ) : (
+        <LessonScreen
+          onEnd={endLesson}
+          diagnostics={diagnostics}
+        />
+      )}
       <audio
         ref={audioRef}
         autoPlay
       ></audio>
-      <button
-        onClick={() =>
-          start(selected && questions.length > 0 ? { articleId: selected.id, questions } : null)
-        }
-        className="cursor-pointer"
-      >
-        Start
-      </button>
-      <button
-        onClick={stop}
-        className="cursor-pointer"
-      >
-        Stop
-      </button>
-      <button
-        onClick={logout}
-        className="cursor-pointer"
-      >
-        Logout
-      </button>
-      <Diagnostics
-        status={status}
-        lastEvent={lastEvent}
-        track={track}
-        events={events}
-        errorText={errorText}
-      />
     </main>
   );
 }
