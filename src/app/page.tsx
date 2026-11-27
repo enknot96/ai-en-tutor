@@ -1,6 +1,7 @@
 "use client";
 
 import ArticlePicker from "@/components/article-picker";
+import ThemeToggle from "@/components/theme-toggle";
 import { useRealtimeSession } from "@/hooks/use-realtime-session";
 import { type Article } from "@/lib/articles/types";
 import { useState } from "react";
@@ -49,6 +50,7 @@ export default function Home() {
 
   return (
     <main>
+      <ThemeToggle />
       <ArticlePicker
         onSelect={selectArticle}
         disabled={preparing}
