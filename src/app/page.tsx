@@ -1,6 +1,7 @@
 "use client";
 
 import ArticlePicker from "@/components/article-picker";
+import Diagnostics from "@/components/diagnostics";
 import ThemeToggle from "@/components/theme-toggle";
 import { useRealtimeSession } from "@/hooks/use-realtime-session";
 import { type Article } from "@/lib/articles/types";
@@ -87,11 +88,13 @@ export default function Home() {
       >
         Logout
       </button>
-      <p>status: {status}</p>
-      <p>last event: {lastEvent}</p>
-      <p>remote track: {track}</p>
-      <p className="text-xs break-all">events: {events.join(" > ")}</p>
-      {errorText && <p className="text-red-600">error: {errorText}</p>}
+      <Diagnostics
+        status={status}
+        lastEvent={lastEvent}
+        track={track}
+        events={events}
+        errorText={errorText}
+      />
     </main>
   );
 }
