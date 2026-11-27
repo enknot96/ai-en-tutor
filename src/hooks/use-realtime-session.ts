@@ -1,3 +1,4 @@
+import { tutorStateFromEvent, type TutorState } from "@/lib/lesson/tutor-state";
 import { useRef, useState } from "react";
 
 export function useRealtimeSession() {
@@ -11,12 +12,15 @@ export function useRealtimeSession() {
   const [events, setEvents] = useState<string[]>([]);
   const [errorText, setErrorText] = useState("");
   const [track, setTrack] = useState("none");
+  const [tutorState, setTutorState] = useState<TutorState>("connecting");
 
   async function start(lesson: { articleId: string; questions: string[] }) {
     setErrorText("");
     setLastEvent("-");
     setEvents([]);
     setTrack("none");
+
+    setTutorState("connecting");
 
     try {
       const res = await fetch("/api/realtime/session", {
@@ -65,6 +69,8 @@ export function useRealtimeSession() {
       dc.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         setLastEvent(msg.type);
+        const next = tutorStateFromEvent(msg.type);
+        if (next) setTutorState(next);
         setEvents((prev) => [...prev, msg.type].slice(-8));
         console.log(msg.type);
         if (msg.type === "conversation.item.input_audio_transcription.completed") {
@@ -123,5 +129,5 @@ export function useRealtimeSession() {
     console.log("stopped");
   }
 
-  return { audioRef, status, lastEvent, events, errorText, track, start, stop };
+  return { audioRef, status, lastEvent, events, errorText, track, tutorState, start, stop };
 }

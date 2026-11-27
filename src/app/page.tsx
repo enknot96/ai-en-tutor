@@ -9,7 +9,7 @@ import { type Article } from "@/lib/articles/types";
 import { useState } from "react";
 
 export default function Home() {
-  const { audioRef, status, lastEvent, events, errorText, track, start, stop } =
+  const { audioRef, status, lastEvent, events, errorText, track, tutorState, start, stop } =
     useRealtimeSession();
 
   const [selected, setSelected] = useState<Article | null>(null);
@@ -94,6 +94,7 @@ export default function Home() {
         />
       ) : (
         <LessonScreen
+          tutorState={tutorState}
           onEnd={endLesson}
           diagnostics={diagnostics}
         />
