@@ -4,13 +4,13 @@ import Diagnostics from "@/components/diagnostics";
 import LessonScreen from "@/components/lesson-screen";
 import PrepareScreen from "@/components/prepare-screen";
 import ThemeToggle from "@/components/theme-toggle";
-import { useRealtimeSession } from "@/hooks/use-realtime-session";
+import { useLiveSession } from "@/hooks/use-live-session";
 import { type Article } from "@/lib/articles/types";
 import { useState } from "react";
 
 export default function Home() {
   const { audioRef, status, lastEvent, events, errorText, track, tutorState, start, stop } =
-    useRealtimeSession();
+    useLiveSession();
 
   const [selected, setSelected] = useState<Article | null>(null);
   const [questions, setQuestions] = useState<string[]>([]);
