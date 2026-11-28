@@ -1,3 +1,4 @@
+import { startSpeakingDetector } from "@/lib/lesson/speaking-detector";
 import { TutorState } from "@/lib/lesson/tutor-state";
 import { useRef, useState } from "react";
 
@@ -30,6 +31,10 @@ export function useLiveSession() {
   const dcRef = useRef<RTCDataChannel | null>(null);
   // Microphone: the learner's voice, sent through the line
   const streamRef = useRef<MediaStream | null>(null);
+  // Audio context for measuring the tutor's voice level
+  const ctxRef = useRef<AudioContext | null>(null);
+  // Stops the voice level measurement
+  const stopDetectorRef = useRef<(() => void) | null>(null);
 
   const [status, setStatus] = useState("idle");
   const [lastEvent, setLastEvent] = useState("-");
@@ -39,6 +44,11 @@ export function useLiveSession() {
   const [tutorState, setTutorState] = useState<TutorState>("connecting");
 
   async function start(lesson: { articleId: string; questions: string[] }) {
+    // Must be created right after the tap: iPhone blocks audio otherwise
+    const ctx = new AudioContext();
+    ctxRef.current = ctx;
+    ctx.resume();
+
     setErrorText("");
     setLastEvent("");
     setEvents([]);
@@ -59,6 +69,9 @@ export function useLiveSession() {
           audioRef.current.srcObject = e.streams[0];
           audioRef.current.play().catch((err) => setErrorText(`play failed: ${err.name}`));
         }
+        stopDetectorRef.current = startSpeakingDetector(ctx, e.streams[0], (speaking) =>
+          setTutorState(speaking ? "speaking" : "listening"),
+        );
       };
 
       const dc = pc.createDataChannel("oai-events");
@@ -108,6 +121,10 @@ export function useLiveSession() {
     }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     pcRef.current?.close();
+    stopDetectorRef.current?.();
+    stopDetectorRef.current = null;
+    ctxRef.current?.close();
+    ctxRef.current = null;
     dcRef.current = null;
     pcRef.current = null;
     streamRef.current = null;
